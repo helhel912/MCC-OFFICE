@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MVP資產與設施管理科 · 虛擬辦公室</title>
+<title>MEP資產與設施管理科 · 虛擬辦公室</title>
 <!-- Firebase 版：設定喺 <script> 入面最頂嘅 FIREBASE_CONFIG 同 OWNER_EMAIL -->
 <style>
 :root{--bg:#0c1222;--ink:#e6ebf5;--muted:#8d98b3;--card:#141b2e;--line:#253049;--accent:#4f7cff;--chip:#1c2540}
@@ -80,7 +80,7 @@ form.send input{flex:1;min-width:0;border:1px solid var(--line);border-radius:10
 <body>
 <div class="app">
   <header>
-    <h1>🏢 <span class="dept">MVP資產與設施管理科</span><small id="modeTag">連線中…</small></h1>
+    <h1>🏢 <span class="dept">MEP資產與設施管理科</span><small id="modeTag">連線中…</small></h1>
     <div class="hud">
       <div class="pill"><span class="dot" id="hDot"></span><b id="hName">—</b>·<span id="hStatus">在線</span></div>
       <div class="pill">📍 <span id="hZone">—</span></div>
@@ -332,8 +332,8 @@ function refreshAccess(){
   else if(mode==='guest'){
     const was=approved;approved=!!members[myId]&&!isBlocked;
     if(!joined){setupWelcome();return}
-    if(approved&&!was){$('lobby').classList.remove('show');solo=false;$('banner').style.display='none';toast('🎉 主人批准咗！歡迎入嚟');sysMsg('你入咗辦公室 · 大家都見到你喇');startLive()}
-    if(!approved&&was){stopLive();knock();showLobby()}
+    if(approved&&!was){$('modeTag').textContent='已批准';$('lobby').classList.remove('show');solo=false;$('banner').style.display='none';toast('🎉 主人批准咗！歡迎入嚟');sysMsg('你入咗辦公室 · 大家都見到你喇');startLive()}
+    if(!approved&&was){$('modeTag').textContent='未批准';stopLive();knock();showLobby()}
     if(!approved)updateLobby();
   }
 }
@@ -579,7 +579,7 @@ function cctvDraw(n){return (w,h)=>{
 }}
 function meetDraw(w,h){
   ctx.fillStyle=grad(ctx,w,h,'#1d4ed8','#1e293b');ctx.fillRect(0,0,w,h);
-  txt('設施月報 · 本月',4,3,6,'#fff');txt('MVP資產與設施管理科',4,11,3.6,'#bfdbfe',undefined,false);
+  txt('設施月報 · 本月',4,3,6,'#fff');txt('MEP資產與設施管理科',4,11,3.6,'#bfdbfe',undefined,false);
   [.5,.8,.6,.95,.7].forEach((v,j)=>{ctx.fillStyle=j===3?C.amber:'#93c5fd';const bh=(h-20)*v;ctx.fillRect(4+j*9,h-3-bh,6,bh)});
   ctx.strokeStyle='#fff';ctx.lineWidth=2.4;ctx.beginPath();ctx.arc(w-14,h-11,6,-1.5,-1.5+Math.PI*1.4);ctx.stroke();
   ctx.strokeStyle='#475569';ctx.beginPath();ctx.arc(w-14,h-11,6,-1.5+Math.PI*1.4,-1.5+Math.PI*2);ctx.stroke();

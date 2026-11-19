@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MVP資產與設施管理科 · 虛擬辦公室</title>
+<!-- Firebase 版：設定喺 <script> 入面最頂嘅 FIREBASE_CONFIG 同 OWNER_EMAIL -->
+<style>
+:root{--bg:#0c1222;--ink:#e6ebf5;--muted:#8d98b3;--card:#141b2e;--line:#253049;--accent:#4f7cff;--chip:#1c2540}
+*{box-sizing:border-box}
+html,body{margin:0;background:radial-gradient(1200px 600px at 50% -10%,#1a2442,var(--bg));color:var(--ink);min-height:100vh;font-family:-apple-system,BlinkMacSystemFont,"PingFang HK","Noto Sans TC","Microsoft JhengHei",sans-serif;-webkit-tap-highlight-color:transparent}
+.app{max-width:1280px;margin:0 auto;padding:14px;display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:14px}
+@media(max-width:860px){.app{grid-template-columns:minmax(0,1fr);padding:8px;gap:8px}}
+header{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+h1{font-size:18px;margin:0;letter-spacing:.3px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+h1 .dept{background:var(--chip);border:1px solid #3a4a7a;border-radius:10px;padding:4px 10px;font-size:15px}
+h1 small{font-weight:500;color:var(--muted);font-size:12px}
+.hud{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:13px}
+.pill{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:5px 10px;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none}
+.bar{width:60px;height:7px;background:#25304a;border-radius:9px;overflow:hidden}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,#f59e0b,#22c55e);transition:width .4s}
+.banner{grid-column:1/-1;background:#2a2412;border:1px solid #5c4a1c;color:#f3d48a;border-radius:12px;padding:9px 12px;font-size:13px;line-height:1.5;display:none}
+.stage{position:relative;background:#070b16;border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,.35)}
+canvas{display:block;width:100%;touch-action:manipulation;cursor:pointer}
+.hint{font-size:12px;color:var(--muted);padding:8px 12px;line-height:1.5}
+.toast{position:absolute;left:50%;top:12px;transform:translateX(-50%) translateY(-8px);background:rgba(10,14,28,.94);border:1px solid #33416b;color:#fff;padding:8px 14px;border-radius:12px;font-size:13px;opacity:0;transition:.25s;pointer-events:none;max-width:88%;text-align:center;z-index:2}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.viewbtn{position:absolute;right:10px;bottom:10px;background:rgba(20,27,46,.92);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:6px 10px;font-size:12px;cursor:pointer;display:none}
+@media(max-width:860px){.viewbtn{display:block}}
+.emotes{position:absolute;left:10px;bottom:10px;display:flex;gap:4px}
+.emotes button{background:rgba(20,27,46,.92);border:1px solid var(--line);border-radius:10px;padding:4px 7px;font-size:16px;cursor:pointer}
+.side{background:var(--card);border:1px solid var(--line);border-radius:16px;display:flex;flex-direction:column;min-height:0;height:min(660px,calc(100vh - 90px))}
+@media(max-width:860px){.side{height:440px}}
+.tabs{display:flex;border-bottom:1px solid var(--line)}
+.tabs button{flex:1;background:none;border:0;padding:11px 4px;font-size:14px;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;font-family:inherit;position:relative}
+.tabs button.on{color:var(--ink);border-color:var(--accent);font-weight:600}
+.badge{background:#ef4444;color:#fff;border-radius:999px;font-size:11px;padding:1px 6px;margin-left:4px;display:none}
+.pane{flex:1;min-height:0;display:none;flex-direction:column}
+.pane.on{display:flex}
+.msgs{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.msg{display:flex;gap:8px;align-items:flex-start;font-size:13.5px;line-height:1.45}
+.av{width:26px;height:26px;border-radius:50%;flex:none;color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;font-weight:700;position:relative}
+.msg .who{font-weight:600;font-size:12px}
+.msg .who span{color:var(--muted);font-weight:400;margin-left:6px}
+.msg.sys{color:var(--muted);font-size:12px;justify-content:center;text-align:center}
+.msg.me{flex-direction:row-reverse;text-align:right}
+.bubble{background:#1f2942;border-radius:12px;padding:6px 10px;display:inline-block;margin-top:2px;word-break:break-word;text-align:left}
+.msg.me .bubble{background:#2c4594}
+form.send{display:flex;gap:6px;padding:10px;border-top:1px solid var(--line)}
+form.send input{flex:1;min-width:0;border:1px solid var(--line);border-radius:10px;padding:9px 10px;font-size:15px;font-family:inherit;background:#0f1526;color:var(--ink)}
+.btn{background:var(--accent);color:#fff;border:0;border-radius:10px;padding:9px 14px;font-size:14px;cursor:pointer;font-family:inherit}
+.btn.ghost{background:#1f2b4d;color:#a9bfff}
+.btn.red{background:#3a1d24;color:#ff9aa2}
+.btn:disabled{opacity:.5;cursor:default}
+.list{overflow-y:auto;padding:4px 0;flex:1}
+.row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid #1d2640}
+.row .av{width:32px;height:32px}
+.row .av .dot{position:absolute;right:-1px;bottom:-1px;border:2px solid var(--card);width:11px;height:11px}
+.row .info{flex:1;min-width:0}
+.row .nm{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .st{font-size:12px;color:var(--muted)}
+.row .acts{display:flex;gap:6px}
+.row .acts button{font-size:12px;padding:6px 9px}
+.empty{color:var(--muted);font-size:13px;text-align:center;padding:24px 16px;line-height:1.6}
+.sect{font-size:12px;color:var(--muted);padding:10px 12px 4px;font-weight:600}
+.overlay{position:fixed;inset:0;background:rgba(5,8,18,.7);display:none;align-items:center;justify-content:center;z-index:20;padding:12px}
+.overlay.show{display:flex}
+.modal{background:var(--card);border:1px solid var(--line);border-radius:18px;width:min(420px,100%);padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.modal h2{margin:0 0 6px;font-size:19px}
+.modal p{margin:0 0 14px;color:var(--muted);font-size:13.5px;line-height:1.55}
+.modal input[type=text]{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;font-size:16px;font-family:inherit;margin-bottom:12px;background:#0f1526;color:var(--ink)}
+.swatches{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.sw{width:32px;height:32px;border-radius:50%;cursor:pointer;border:3px solid transparent}
+.sw.on{border-color:#fff}
+.knock{font-size:44px;text-align:center;margin:6px 0 10px;animation:kn 1.4s infinite}
+@keyframes kn{0%,100%{transform:rotate(0)}20%{transform:rotate(-14deg)}40%{transform:rotate(10deg)}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>🏢 <span class="dept">MVP資產與設施管理科</span><small id="modeTag">連線中…</small></h1>
+    <div class="hud">
+      <div class="pill"><span class="dot" id="hDot"></span><b id="hName">—</b>·<span id="hStatus">在線</span></div>
+      <div class="pill">📍 <span id="hZone">—</span></div>
+      <div class="pill">⚡ <div class="bar"><i id="hEnergy" style="width:80%"></i></div></div>
+      <div class="pill" id="hFocusPill" style="display:none">🎯 <span id="hFocus">25:00</span></div>
+      <div class="pill">👥 <span id="hOnline">1</span></div>
+      <button class="pill" id="signOut" style="display:none;cursor:pointer;color:inherit;font:inherit">登出</button>
+    </div>
+  </header>
+  <div class="banner" id="banner"></div>
+
+  <div>
+    <div class="stage" id="stage">
+      <canvas id="cv"></canvas>
+      <div class="toast" id="toast"></div>
+      <div class="emotes" id="emotes"></div>
+      <button class="viewbtn" id="viewBtn">🗺️ 睇全圖</button>
+    </div>
+    <div class="hint">👆 點地板行過去 · 點同事 @佢 · 點物件互動（監控台、伺服器機櫃、工單看板、咖啡機、街機、梳化、任何一張枱開「專注模式」）</div>
+  </div>
+
+  <aside class="side">
+    <div class="tabs">
+      <button class="on" data-tab="chat">💬 聊天</button>
+      <button data-tab="people">👥 在線 <span id="pplCount"></span></button>
+      <button data-tab="req" id="reqTab" style="display:none">🔔 申請<span class="badge" id="reqBadge">0</span></button>
+    </div>
+    <div class="pane on" id="pane-chat">
+      <div class="msgs" id="gMsgs"></div>
+      <form class="send" id="gForm"><input id="gInput" placeholder="同科室嘅同事講嘢…" autocomplete="off" maxlength="300"><button class="btn">發送</button></form>
+    </div>
+    <div class="pane" id="pane-people"><div class="list" id="pplList"></div></div>
+    <div class="pane" id="pane-req"><div class="list" id="reqList"></div></div>
+  </aside>
+</div>
+
+<div class="overlay show" id="welcome">
+  <div class="modal">
+    <h2 id="wTitle">歡迎嚟到虛擬辦公室 👋</h2>
+    <p id="wText">連線緊…</p>
+    <input type="text" id="wName" maxlength="12" placeholder="你個暱稱">
+    <div class="swatches" id="wSw"></div>
+    <button class="btn" id="wGo" style="width:100%" disabled>請稍等…</button>
+  </div>
+</div>
+
+<div class="overlay" id="lobby">
+  <div class="modal" style="text-align:center">
+    <div class="knock" id="lIcon">🚪</div>
+    <h2 id="lTitle">敲緊門…</h2>
+    <p id="lText">已經通知辦公室主人，佢批准之後你就會自動入去。請保持呢個網頁開住。</p>
+    <button class="btn ghost" id="lSolo">唔等住，自己行下先</button>
+  </div>
+</div>
+
+<script type="module">
+(()=>{
+const COLS=24, ROWS=16;
+const $=id=>document.getElementById(id);
+const rand=(a,b)=>a+Math.random()*(b-a);
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+const clean=(s,n)=>String(s??'').replace(/[\u0000-\u001f\u007f​-‏‪-‮⁦-⁩]/g,'').slice(0,n);
+const hash=(a,b)=>{let h=(a*73856093)^(b*19349663);h=(h^(h>>>13))*1274126177;return ((h^(h>>>16))>>>0)/4294967296};
+
+/* ---------- map ---------- */
+const grid=Array.from({length:ROWS},()=>Array(COLS).fill('.'));
+const S=(x,y,c)=>{grid[y][x]=c};
+for(let x=0;x<COLS;x++){S(x,0,'#');S(x,ROWS-1,'#');S(x,7,'#')}
+for(let y=0;y<ROWS;y++){S(0,y,'#');S(COLS-1,y,'#')}
+for(let y=0;y<=7;y++){S(11,y,'#');S(17,y,'#')}
+for(let y=7;y<ROWS;y++){S(9,y,'#');S(16,y,'#')}
+[[5,7],[13,7],[20,7],[11,4],[17,4],[9,11],[16,11]].forEach(([x,y])=>S(x,y,'.'));
+const ZONES=[
+ {id:'ctrl',name:'設施監控中心',x0:1,y0:1,x1:10,y1:6,floor:'slate',status:'在線'},
+ {id:'meet',name:'會議室',x0:12,y0:1,x1:16,y1:6,floor:'carpet',status:'開會中'},
+ {id:'pantry',name:'茶水間',x0:18,y0:1,x1:22,y1:6,floor:'tile',status:'休息中'},
+ {id:'asset',name:'數據管理中心',x0:1,y0:8,x1:8,y1:14,floor:'wood',status:'在線'},
+ {id:'wo',name:'工單調度組',x0:10,y0:8,x1:15,y1:14,floor:'wood',status:'在線'},
+ {id:'lounge',name:'休息區',x0:17,y0:8,x1:22,y1:14,floor:'wood2',status:'休息中'}];
+const zoneAt=(x,y)=>ZONES.find(z=>x>=z.x0&&x<=z.x1&&y>=z.y0&&y<=z.y1)||null;
+const FURN=[
+ {t:'console',x:2,y:3,w:7,h:1,act:'console'},{t:'console',x:2,y:5,w:7,h:1,act:'console'},
+ {t:'rack',x:10,y:1,act:'rack'},{t:'rack',x:10,y:2,act:'rack'},{t:'plant',x:1,y:6},{t:'plant',x:10,y:6},
+ {t:'table',x:13,y:3,w:3,h:2,act:'meeting',icon:'📊'},{t:'plant',x:12,y:1},{t:'plant',x:16,y:6},
+ {t:'counter',x:18,y:1,w:3,h:1,act:'microwave'},{t:'coffee',x:21,y:1,act:'coffee'},{t:'fridge',x:22,y:1,act:'fridge'},
+ {t:'table',x:19,y:4,w:2,h:1,act:'snack',icon:'🍪'},{t:'plant',x:22,y:6},
+ {t:'desk',x:2,y:9,w:2,h:1,act:'desk'},{t:'desk',x:5,y:9,w:2,h:1,act:'desk'},{t:'desk',x:2,y:12,w:2,h:1,act:'desk'},{t:'desk',x:5,y:12,w:2,h:1,act:'desk'},
+ {t:'printer',x:8,y:14,act:'printer'},{t:'plant',x:1,y:14},{t:'plant',x:8,y:8},
+ {t:'board',x:10,y:8,w:3,h:1,act:'board'},
+ {t:'desk',x:10,y:10,w:2,h:1,act:'desk'},{t:'desk',x:13,y:10,w:2,h:1,act:'desk'},{t:'desk',x:10,y:13,w:2,h:1,act:'desk'},{t:'desk',x:13,y:13,w:2,h:1,act:'desk'},
+ {t:'plant',x:15,y:8},
+ {t:'arcade',x:21,y:9,act:'arcade'},{t:'arcade',x:22,y:9,act:'arcade'},
+ {t:'sofa',x:18,y:13,w:3,h:1,act:'sofa'},{t:'table',x:18,y:11,w:2,h:1,icon:'🎲'},
+ {t:'plant',x:17,y:8},{t:'plant',x:22,y:14}];
+const HEIGHT={console:28,desk:28,table:11,sofa:20,counter:24,coffee:32,fridge:42,rack:50,arcade:46,plant:26,board:44,printer:16};
+const SEATS=[];
+for(let x=2;x<=8;x++)SEATS.push([x,4],[x,6]);
+[[2,10],[3,10],[5,10],[6,10],[2,13],[3,13],[5,13],[6,13],[10,11],[11,11],[13,11],[14,11],[10,14],[11,14],[13,14],[14,14]].forEach(s=>SEATS.push(s));
+const furnAt=Array.from({length:ROWS},()=>Array(COLS).fill(null));
+FURN.forEach(f=>{f.w=f.w||1;f.h=f.h||1;for(let y=f.y;y<f.y+f.h;y++)for(let x=f.x;x<f.x+f.w;x++){grid[y][x]='F';furnAt[y][x]=f}});
+const walkable=(x,y)=>x>=0&&y>=0&&x<COLS&&y<ROWS&&grid[y][x]==='.';
+function bfs(sx,sy,targets){
+  const key=(x,y)=>y*COLS+x;if(targets.has(key(sx,sy)))return [];
+  const prev=new Map([[key(sx,sy),-1]]);const q=[[sx,sy]];
+  while(q.length){const [x,y]=q.shift();
+    for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy,k=key(nx,ny);
+      if(!walkable(nx,ny)||prev.has(k))continue;prev.set(k,key(x,y));
+      if(targets.has(k)){const path=[];let c=k;while(c!==key(sx,sy)){path.unshift([c%COLS,Math.floor(c/COLS)]);c=prev.get(c)}return path}
+      q.push([nx,ny]);}}
+  return null;
+}
+const tset=list=>new Set(list.filter(([x,y])=>walkable(x,y)).map(([x,y])=>y*COLS+x));
+function adjOfRect(f){const o=[];for(let x=f.x;x<f.x+f.w;x++)o.push([x,f.y-1],[x,f.y+f.h]);for(let y=f.y;y<f.y+f.h;y++)o.push([f.x-1,y],[f.x+f.w,y]);return o}
+
+/* ---------- local player ---------- */
+const STATUS_COLOR={'在線':'#22c55e','專注中':'#ef4444','開會中':'#f59e0b','休息中':'#3b82f6'};
+const spawn=pick([[4,11],[7,11],[12,12],[3,8],[14,9]]);
+const player={px:spawn[0],py:spawn[1],path:[],dir:1,bob:0,bubble:null,speed:4.2,onArrive:null,name:'我',color:'#4f7cff',hair:'#1f2937'};
+let energy=80,focusUntil=0,target=null,lastZone=null;
+function goTo(c,targets,onArrive){
+  const moving=c.path.length>0;const start=moving?c.path[0]:[Math.round(c.px),Math.round(c.py)];
+  const p=bfs(start[0],start[1],targets);if(p===null)return false;
+  c.path=(moving?[start]:[]).concat(p);c.onArrive=onArrive||null;
+  if(!c.path.length&&c.onArrive){const f=c.onArrive;c.onArrive=null;f()}return true;
+}
+function step(c,dt){
+  if(!c.path.length){c.moving=false;return}
+  const [tx,ty]=c.path[0];const dx=tx-c.px,dy=ty-c.py,d=Math.hypot(dx,dy),s=c.speed*dt;
+  if(Math.abs(dx-dy)>0.01)c.dir=(dx-dy)>0?1:-1;
+  if(d<=s){c.px=tx;c.py=ty;c.path.shift();if(!c.path.length&&c.onArrive){const f=c.onArrive;c.onArrive=null;f()}}
+  else{c.px+=dx/d*s;c.py+=dy/d*s}
+  c.moving=true;c.bob+=dt*14;
+}
+const tilePos=c=>[Math.round(c.px),Math.round(c.py)];
+function myStatus(){if(focusUntil>Date.now())return '專注中';const z=zoneAt(...tilePos(player));return z?z.status:'在線'}
+function say(c,text,sec=4){c.bubble={text,until:performance.now()+sec*1000}}
+function addEnergy(v){energy=Math.max(0,Math.min(100,energy+v))}
+const ACTIONS={
+ console:()=>toast(pick(['🖥️ 監控畫面：全部設施運作正常 ✅','🌡️ 冷水機組 CH-02 溫度正常','⚠️ AHU-07 濾網壓差偏高，建議安排 PM'])),
+ rack:()=>toast(pick(['🗄️ 伺服器機櫃：溫度 22°C，一切正常','💡 機櫃燈閃緊，BMS 資料同步中…'])),
+ board:()=>toast('📋 工單看板：記得跟進未完成嘅 CM 同 PM 工單'),
+ printer:()=>{toast('🏷️ 打印咗一張資產標籤');sayMine('🏷️ 貼標籤去！')},
+ coffee:()=>{addEnergy(20);toast('☕ 沖咗杯咖啡，精神 +20');sayMine('☕ 好香！')},
+ fridge:()=>{addEnergy(10);toast('🧃 喺雪櫃拎咗支檸檬茶，精神 +10')},
+ microwave:()=>{addEnergy(5);toast('🍜 叮緊個飯…香到成個茶水間都聞到')},
+ snack:()=>{addEnergy(5);toast('🍪 食咗塊曲奇，精神 +5')},
+ sofa:()=>{addEnergy(15);toast('🛋️ 喺梳化躺咗一陣，精神 +15');sayMine('😌 充電中…')},
+ arcade:()=>{addEnergy(10);toast(pick(['🕹️ 打咗局街機，破咗紀錄！','🕹️ 玩咗局拳皇，輸咗 😤']))},
+ meeting:()=>toast('📽️ 你入咗會議室，狀態轉咗「開會中」'),
+ desk:()=>toggleFocus()};
+function toggleFocus(){
+  if(focusUntil>Date.now()){focusUntil=0;toast('🎯 已結束專注模式');return}
+  focusUntil=Date.now()+25*60*1000;toast('🎯 專注模式 25 分鐘開始！狀態：專注中');sayMine('🎧 勿擾');
+}
+function cancelFocus(){if(focusUntil>Date.now()){focusUntil=0;toast('🎯 你離開咗座位，專注模式已結束')}}
+
+/* ======================================================================
+   ⚙️ 設定：將 Firebase 畀你嘅設定貼喺度（教學第 4 步）
+   ====================================================================== */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDA-ep6VFkXZEv0NTMmNCwIYk24SrW_N48",
+  authDomain: "mep-mcc-office.firebaseapp.com",
+  databaseURL: "https://mep-mcc-office-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "mep-mcc-office",
+  storageBucket: "mep-mcc-office.firebasestorage.app",
+  messagingSenderId: "883256145672",
+  appId: "1:883256145672:web:868a7455be160aaff85ebd"
+};
+/* 主人（你）嘅 Google 帳號 email，要同 Rules 入面嗰個一模一樣 */
+const OWNER_EMAIL = "helenasoares912@gmail.com";
+/* ====================================================================== */
+
+/* ---------- multiplayer state ---------- */
+let fb=null,auth=null,rdb=null,me=null,myId=null,isOwner=false,ownerId=null;
+let members={},blocked={},requests={};
+let approved=false,joined=false,solo=false,mode='connecting',isBlocked=false;
+let names={};
+const remotes=new Map();
+let knockers=[];
+let emoteSeq=0;
+const unsubs=[];let liveOn=false;let historyDone=false;
+
+function configured(){return !String(FIREBASE_CONFIG.apiKey).includes('PASTE')&&!OWNER_EMAIL.includes('your.email')}
+const safeColor=c=>/^#[0-9a-f]{6}$/i.test(c)?c:'#64748b';
+
+function presenceRef(){return fb.ref(rdb,'presence/'+myId)}
+function pushPresence(extra){
+  if(!rdb||!joined||!approved||solo)return;
+  const [x,y]=tilePos(player);
+  const body={name:player.nick||'同事',color:player.color,x,y,st:myStatus(),t:fb.serverTimestamp()};
+  if(extra&&extra.emote)body.emote=extra.emote;
+  fb.update(presenceRef(),body).catch(()=>{});
+}
+let lastSent='';
+function syncPresence(){const [x,y]=tilePos(player);const k=[approved,solo,x,y,myStatus()].join(',');if(k!==lastSent){lastSent=k;pushPresence()}}
+function sayMine(text){say(player,text);if(approved&&!solo&&rdb){emoteSeq=Date.now();pushPresence({emote:{n:emoteSeq,t:clean(text,80)}})}}
+
+/* ---------- live office (members only) ---------- */
+function startLive(){
+  if(liveOn)return;liveOn=true;historyDone=false;
+  fb.onDisconnect(presenceRef()).remove();
+  lastSent='';syncPresence();
+  unsubs.push(fb.onValue(fb.ref(rdb,'presence'),snap=>{
+    const all=snap.val()||{};const seen=new Set();
+    for(const uid in all){
+      if(uid===myId)continue;const pr=all[uid]||{};seen.add(uid);
+      let r=remotes.get(uid);const x=Number.isFinite(pr.x)?pr.x:7,y=Number.isFinite(pr.y)?pr.y:11;
+      if(!r){r={peer:uid,id:uid,char:{px:x,py:y,tx:x,ty:y,dir:1,bob:0,bubble:null,hair:'#1f2937'}};remotes.set(uid,r);if(historyDone)sysMsg(`${clean(pr.name,12)||'同事'} 入咗辦公室 👋`)}
+      const c=r.char;c.tx=x;c.ty=y;c.color=safeColor(pr.color);c.status=STATUS_COLOR[pr.st]?pr.st:'在線';c.name=clean(pr.name,12)||'同事';c.isOwner=uid===ownerId;names[uid]=c.name;
+      const e=pr.emote;if(e&&typeof e.n==='number'&&r.emoteN!==e.n){if(r.emoteN!==undefined)say(c,clean(e.t,80));r.emoteN=e.n}
+    }
+    for(const [k,r] of remotes)if(!seen.has(k)){remotes.delete(k);sysMsg(`${r.char.name} 離開咗`)}
+    renderPeople();
+  },()=>{}));
+  const q=fb.query(fb.ref(rdb,'messages'),fb.limitToLast(40));
+  unsubs.push(fb.onChildAdded(q,snap=>{
+    const m=snap.val()||{};const text=clean(m.text,300);if(!text)return;
+    const mine=m.uid===myId;const c={name:clean(m.name,12)||'同事',color:safeColor(m.color),isOwner:m.uid===ownerId};
+    postChat(c,text,mine,m.at);
+    if(historyDone&&!mine){const r=remotes.get(m.uid);if(r)say(r.char,text)}
+  },()=>{}));
+  setTimeout(()=>{historyDone=true},1500);
+}
+function stopLive(){
+  if(!liveOn)return;liveOn=false;unsubs.splice(0).forEach(u=>{try{u()}catch(e){}});
+  fb.onDisconnect(presenceRef()).cancel().catch(()=>{});fb.remove(presenceRef()).catch(()=>{});remotes.clear();renderPeople();
+}
+
+/* ---------- owner actions ---------- */
+async function approve(uid){
+  if(!isOwner||!uid)return;const rq=requests[uid]||{};
+  try{await fb.update(fb.ref(rdb),{[`members/${uid}`]:{name:clean(rq.name,20)||'同事',color:safeColor(rq.color),at:fb.serverTimestamp()},[`requests/${uid}`]:null,[`blocked/${uid}`]:null});toast('✅ 已批准')}
+  catch(e){toast('⚠️ 批准失敗，請檢查 Rules 入面嘅主人 email')}
+}
+async function deny(uid){
+  if(!isOwner||!uid)return;
+  try{await fb.update(fb.ref(rdb),{[`blocked/${uid}`]:true,[`requests/${uid}`]:null});toast('🚫 已拒絕')}catch(e){toast('⚠️ 操作失敗')}
+}
+async function kick(uid){
+  if(!isOwner||!uid)return;
+  try{await fb.update(fb.ref(rdb),{[`members/${uid}`]:null,[`presence/${uid}`]:null});toast('👋 已移除，佢要重新敲門先入到')}catch(e){toast('⚠️ 操作失敗')}
+}
+async function unblock(uid){if(!isOwner)return;try{await fb.remove(fb.ref(rdb,'blocked/'+uid));toast('已解除拒絕')}catch(e){}}
+
+/* ---------- access state ---------- */
+function refreshAccess(){
+  if(mode==='owner'){approved=true}
+  else if(mode==='guest'){
+    const was=approved;approved=!!members[myId]&&!isBlocked;
+    if(!joined){setupWelcome();return}
+    if(approved&&!was){$('lobby').classList.remove('show');solo=false;$('banner').style.display='none';toast('🎉 主人批准咗！歡迎入嚟');sysMsg('你入咗辦公室 · 大家都見到你喇');startLive()}
+    if(!approved&&was){stopLive();knock();showLobby()}
+    if(!approved)updateLobby();
+  }
+}
+function knock(){
+  if(!rdb||isBlocked)return;
+  fb.set(fb.ref(rdb,'requests/'+myId),{name:player.nick||'同事',color:player.color,at:fb.serverTimestamp()}).catch(()=>{});
+}
+function showLobby(){if(solo)return;$('lobby').classList.add('show');updateLobby()}
+function updateLobby(){
+  if(isBlocked){$('lIcon').textContent='🚫';$('lIcon').style.animation='none';$('lTitle').textContent='申請未獲批准';$('lText').textContent='辦公室主人拒絕咗你嘅申請。如有需要請直接聯絡佢。';return}
+  $('lIcon').textContent='🚪';$('lIcon').style.animation='';$('lTitle').textContent='已經敲門 🚪';
+  $('lText').textContent='主人一打開辦公室就會見到你嘅申請。批准之後，你開住呢個網頁會自動入去；或者遲啲返嚟再開都得。';
+}
+
+/* ---------- firebase init ---------- */
+const FBV='10.12.2';
+async function initFirebase(){
+  if(!configured()){mode='setup';setupWelcome();return}
+  try{
+    const base=`https://www.gstatic.com/firebasejs/${FBV}/`;
+    const [a,b,c]=await Promise.all(['firebase-app.js','firebase-auth.js','firebase-database.js'].map(f=>import(base+f)));
+    fb={...a,...b,...c};
+    const app=fb.initializeApp(FIREBASE_CONFIG);auth=fb.getAuth(app);rdb=fb.getDatabase(app);
+  }catch(e){mode='error';setupWelcome('載入唔到 Firebase：請檢查網絡，同埋 FIREBASE_CONFIG 有冇貼啱。');return}
+  fb.getRedirectResult(auth).catch(()=>{});
+  fb.onAuthStateChanged(auth,u=>{
+    if(!u){me=null;myId=null;mode='signin';stopLive();joined=false;setupWelcome();return}
+    me=u;myId=u.uid;names[myId]=u.displayName||'';
+    isOwner=!!u.email&&u.emailVerified&&u.email.toLowerCase()===OWNER_EMAIL.toLowerCase();
+    mode=isOwner?'owner':'guest';if(isOwner)ownerId=myId;
+    if(isOwner){
+      $('reqTab').style.display='';
+      fb.onValue(fb.ref(rdb,'requests'),s=>{requests=s.val()||{};renderReq()},()=>{});
+      fb.onValue(fb.ref(rdb,'members'),s=>{members=s.val()||{};renderPeople()},()=>{});
+      fb.onValue(fb.ref(rdb,'blocked'),s=>{blocked=s.val()||{};renderReq()},()=>{});
+      approved=true;setupWelcome();
+    }else{
+      let got=0;const done=()=>{if(++got===2)refreshAccess()};
+      fb.onValue(fb.ref(rdb,'members/'+myId),s=>{members=s.exists()?{[myId]:s.val()}:{};if(got<2)done();else refreshAccess()},()=>{if(got<2)done()});
+      fb.onValue(fb.ref(rdb,'blocked/'+myId),s=>{isBlocked=s.exists();if(got<2)done();else refreshAccess()},()=>{if(got<2)done()});
+    }
+  });
+}
+async function signIn(){
+  const p=new fb.GoogleAuthProvider();p.setCustomParameters({prompt:'select_account'});
+  try{await fb.signInWithPopup(auth,p)}
+  catch(e){if(e&&(e.code==='auth/popup-blocked'||e.code==='auth/operation-not-supported-in-this-environment'))fb.signInWithRedirect(auth,p);
+    else if(e&&e.code==='auth/unauthorized-domain')setupWelcome('呢個網址未加入 Firebase 嘅「Authorized domains」，請睇教學第 6 步。');
+    else if(!(e&&e.code==='auth/popup-closed-by-user'))setupWelcome('登入失敗：'+(e&&e.code||'未知錯誤'))}
+}
+$('signOut').onclick=()=>{if(auth){stopLive();fb.signOut(auth);location.reload()}};
+
+/* ---------- welcome ---------- */
+const COLORS=['#4f7cff','#ef4444','#10b981','#f59e0b','#ec4899','#0ea5e9','#a3a3a3'];
+let chosen=store.get('vo_color')||COLORS[0];
+$('wName').value=store.get('vo_name')||'';
+function drawSwatches(){$('wSw').innerHTML='';COLORS.forEach(c=>{const s=document.createElement('div');s.className='sw'+(c===chosen?' on':'');s.style.background=c;s.onclick=()=>{chosen=c;drawSwatches()};$('wSw').appendChild(s)})}
+drawSwatches();
+function setupWelcome(err){
+  if(joined&&mode!=='signin')return;
+  $('welcome').classList.add('show');
+  const b=$('wGo'),nameEl=$('wName'),sw=$('wSw');b.disabled=false;
+  const showForm=v=>{nameEl.style.display=v?'':'none';sw.style.display=v?'':'none'};
+  $('signOut').style.display=me?'':'none';
+  if(err){$('wTitle').textContent='出咗少少問題 ⚠️';$('wText').textContent=err;showForm(false);b.textContent='再試一次';b.onclick=()=>location.reload();return}
+  if(mode==='setup'){$('wTitle').textContent='未設定 Firebase ⚙️';$('wText').textContent='請用文字編輯器打開呢個 HTML 檔，喺最頂嘅 FIREBASE_CONFIG 同 OWNER_EMAIL 貼返你嘅資料（睇教學第 4、5 步）。';showForm(false);b.textContent='入去行下（單人模式）';b.onclick=()=>{mode='solo';start()};$('modeTag').textContent='未設定';return}
+  if(mode==='connecting'){$('wTitle').textContent='連線中…';$('wText').textContent='載入緊 Firebase';showForm(false);b.disabled=true;b.textContent='請稍等…';return}
+  if(mode==='signin'){$('wTitle').textContent='歡迎嚟到虛擬辦公室 👋';$('wText').textContent='請先用 Google 帳號登入。登入之後就可以敲門，等主人批准入辦公室。';showForm(false);b.textContent='用 Google 登入';b.onclick=signIn;$('modeTag').textContent='未登入';return}
+  showForm(true);if(!nameEl.value&&names[myId])nameEl.value=names[myId].slice(0,12);b.onclick=start;
+  if(mode==='owner'){$('wTitle').textContent='你係辦公室主人 👑';$('wText').textContent='入去之後，有人敲門你會喺「🔔 申請」見到，批准咗佢先入得嚟。';b.textContent='開門入辦公室 →';$('modeTag').textContent='你係主人'}
+  else if(approved){$('wTitle').textContent='歡迎返嚟 👋';$('wText').textContent='主人之前已經批准咗你，可以直接入去。';b.textContent='入辦公室 →';$('modeTag').textContent='已批准'}
+  else if(isBlocked){$('wTitle').textContent='申請未獲批准 🚫';$('wText').textContent='辦公室主人拒絕咗你嘅申請。';showForm(false);b.textContent='自己行下（單人模式）';b.onclick=()=>{solo=true;start()};$('modeTag').textContent='未獲批准'}
+  else{$('wTitle').textContent='想入辦公室？🚪';$('wText').textContent='改個暱稱、揀個顏色，然後敲門。主人批准之後你就會自動入去。';b.textContent='敲門 🚪';$('modeTag').textContent='未批准'}
+}
+function start(){
+  const nm=clean($('wName').value.trim(),12)||names[myId]||'同事';player.nick=nm;player.color=chosen;
+  store.set('vo_name',nm);store.set('vo_color',chosen);player.name=nm;names[myId]=nm;
+  $('welcome').classList.remove('show');joined=true;lastZone=zoneAt(...tilePos(player));
+  if(mode==='solo'||solo){solo=true;showBanner('🔒 單人模式：其他人睇唔到你。');sysMsg('單人模式 · 冇其他人喺度');return}
+  if(mode==='owner'){sysMsg('你開咗辦公室門 · 有人敲門會通知你');startLive();renderReq();toast('👑 等同事敲門啦，記得喺「申請」批准');return}
+  if(approved){sysMsg('你入咗辦公室');startLive()}
+  else{knock();showLobby()}
+}
+$('wName').addEventListener('keydown',e=>{if(e.key==='Enter'&&!$('wGo').disabled)$('wGo').click()});
+$('lSolo').onclick=()=>{solo=true;$('lobby').classList.remove('show');showBanner('⏳ 你仲未獲批准，而家只係自己行下，其他人見唔到你。主人批准咗就會自動連埋大家。')};
+function showBanner(t){$('banner').textContent=t;$('banner').style.display='block'}
+
+/* ---------- chat ---------- */
+const hhmm=ts=>new Date(typeof ts==='number'?ts:Date.now()).toLocaleTimeString('zh-HK',{hour:'2-digit',minute:'2-digit',hour12:false});
+function avatar(name,color){const d=document.createElement('div');d.className='av';d.style.background=color;d.textContent=[...(name||'?')][0];return d}
+function postChat(c,text,mine,ts){
+  const m=document.createElement('div');m.className='msg'+(mine?' me':'');m.appendChild(avatar(c.name,c.color));
+  const body=document.createElement('div');const who=document.createElement('div');who.className='who';who.textContent=c.name+(c.isOwner?' 👑':'');
+  const sp=document.createElement('span');sp.textContent=hhmm(ts);who.appendChild(sp);
+  const bb=document.createElement('div');bb.className='bubble';bb.textContent=text;body.append(who,bb);m.appendChild(body);
+  $('gMsgs').appendChild(m);$('gMsgs').scrollTop=1e9;
+}
+function sysMsg(t){const m=document.createElement('div');m.className='msg sys';m.textContent=t;$('gMsgs').appendChild(m);$('gMsgs').scrollTop=1e9}
+$('gForm').onsubmit=e=>{
+  e.preventDefault();const v=clean($('gInput').value.trim(),300);if(!v)return;$('gInput').value='';
+  say(player,v);
+  if(approved&&!solo&&rdb&&liveOn){fb.push(fb.ref(rdb,'messages'),{uid:myId,name:player.nick||'同事',color:player.color,text:v,at:fb.serverTimestamp()}).catch(()=>sysMsg('⚠️ 訊息發送失敗'))}
+  else{postChat({name:player.name,color:player.color},v,true);sysMsg('（未連線，其他人睇唔到呢條訊息）')}
+};
+['👋','👍','😂','☕','🎉'].forEach(e=>{const b=document.createElement('button');b.textContent=e;b.onclick=()=>sayMine(e);$('emotes').appendChild(b)});
+
+/* ---------- people / requests ---------- */
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));
+  document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('on',p.id==='pane-'+b.dataset.tab));
+});
+function row(name,color,status,sub,buttons){
+  const r=document.createElement('div');r.className='row';const av=avatar(name,color);
+  if(status){const d=document.createElement('span');d.className='dot';d.style.background=STATUS_COLOR[status]||'#9ca3af';av.appendChild(d)}
+  const info=document.createElement('div');info.className='info';const n=document.createElement('div');n.className='nm';n.textContent=name;
+  const s=document.createElement('div');s.className='st';s.textContent=sub;info.append(n,s);
+  const a=document.createElement('div');a.className='acts';buttons.forEach(([t,cls,fn])=>{const b=document.createElement('button');b.className='btn '+cls;b.textContent=t;b.onclick=fn;a.appendChild(b)});
+  r.append(av,info,a);return r;
+}
+function renderPeople(){
+  const L=$('pplList');L.innerHTML='';
+  const z=zoneAt(...tilePos(player));
+  L.appendChild(row((player.name||'我')+'（你）'+(mode==='owner'?' 👑':''),player.color,myStatus(),`${myStatus()} · ${z?z.name:'走廊'}`,[]));
+  const vis=approved&&!solo&&liveOn;
+  if(vis)for(const r of remotes.values()){const c=r.char;const zz=zoneAt(Math.round(c.px),Math.round(c.py));
+    const btns=[['搵佢','ghost',()=>walkToRemote(r)]];if(isOwner)btns.push(['移除','red',()=>kick(r.id)]);
+    L.appendChild(row(c.name+(c.isOwner?' 👑':''),c.color,c.status,`${c.status} · ${zz?zz.name:'走廊'}`,btns))}
+  if(!vis||!remotes.size){const e=document.createElement('div');e.className='empty';
+    e.textContent=!vis?'登入並獲批准之後，就會見到辦公室入面嘅人。':(isOwner?'暫時得你一個。將網址傳畀同事，佢哋用 Google 登入再敲門，你就會收到申請。':'暫時得你一個喺度。');L.appendChild(e)}
+  if(isOwner){const ids=Object.keys(members);if(ids.length){const h=document.createElement('div');h.className='sect';h.textContent=`已批准嘅人（${ids.length}）`;L.appendChild(h);
+    ids.forEach(id=>{const m=members[id]||{};const online=remotes.has(id);L.appendChild(row(clean(m.name,20)||'同事',safeColor(m.color),null,online?'喺線':'離線',[['取消批准','red',()=>kick(id)]]))})}}
+  $('pplCount').textContent=`(${(vis?remotes.size:0)+1})`;$('hOnline').textContent=(vis?remotes.size:0)+1;
+}
+let lastKnockCount=-1;
+function renderReq(){
+  if(!isOwner)return;
+  const L=$('reqList');L.innerHTML='';
+  const ids=Object.keys(requests).filter(id=>!members[id]);
+  ids.forEach(id=>{const q=requests[id]||{};const when=typeof q.at==='number'?new Date(q.at).toLocaleString('zh-HK',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}):'';
+    L.appendChild(row(clean(q.name,20)||'同事',safeColor(q.color),null,'敲門時間 '+when,[['批准','',()=>approve(id)],['拒絕','red',()=>deny(id)]]))});
+  if(!ids.length){const e=document.createElement('div');e.className='empty';e.textContent='暫時冇人敲門。\n將網址傳畀同事，佢哋用 Google 登入再㩒「敲門」，申請就會出現喺度。';e.style.whiteSpace='pre-line';L.appendChild(e)}
+  const bl=Object.keys(blocked);if(bl.length){const h=document.createElement('div');h.className='sect';h.textContent=`已拒絕（${bl.length}）`;L.appendChild(h);
+    bl.forEach(id=>L.appendChild(row('已拒絕嘅帳號','#475569',null,id.slice(0,8)+'…',[['解除','ghost',()=>unblock(id)]])))}
+  const n=ids.length;$('reqBadge').textContent=n;$('reqBadge').style.display=n?'inline':'none';
+  if(lastKnockCount>=0&&n>lastKnockCount&&joined)toast(`🔔 ${clean((requests[ids[n-1]]||{}).name,12)||'有人'} 敲緊門，去「申請」批准`);
+  lastKnockCount=n;
+}
+function walkToRemote(r){const nx=Math.round(r.char.px),ny=Math.round(r.char.py);cancelFocus();target={x:nx,y:ny,t:performance.now()};
+  goTo(player,tset([[nx+1,ny],[nx-1,ny],[nx,ny+1],[nx,ny-1],[nx,ny]]),()=>{$('gInput').value=`@${r.char.name} `;$('gInput').focus()});
+  if(window.innerWidth<=860)$('stage').scrollIntoView({behavior:'smooth'});}
+
+/* ---------- iso projection ---------- */
+const HW=24,HH=12,EL=Math.hypot(HW,HH);
+const iso=(gx,gy,z=0)=>[(gx-gy)*HW,(gx+gy)*HH-z];
+const WMINX=-ROWS*HW-24,WMAXX=COLS*HW+24,WMINY=-92,WMAXY=(COLS+ROWS)*HH+24;
+const WW=WMAXX-WMINX,WH=WMAXY-WMINY;
+const wallH=(x,y)=>(y===0||x===0)?64:(y===ROWS-1||x===COLS-1)?7:20;
+
+/* ---------- input ---------- */
+const cv=$('cv'),ctx=cv.getContext('2d');
+let scale=1,camX=WMINX,camY=WMINY,viewW=WW,viewH=WH,overview=false,narrow=false,camInit=false;
+function resize(){
+  const cw=$('stage').clientWidth;narrow=window.innerWidth<=860;
+  let ch;
+  if(narrow&&!overview){scale=cw/470;ch=Math.round(Math.min(cw*1.0,window.innerHeight*0.62))}
+  else{scale=cw/WW;ch=Math.round(WH*scale)}
+  const dpr=window.devicePixelRatio||1;
+  cv.style.height=ch+'px';cv.width=Math.round(cw*dpr);cv.height=Math.round(ch*dpr);viewW=cw/scale;viewH=ch/scale;cv._dpr=dpr;
+  $('viewBtn').textContent=overview?'🧍 跟住我':'🗺️ 睇全圖';camInit=false;
+}
+window.addEventListener('resize',resize);$('viewBtn').onclick=()=>{overview=!overview;resize()};
+cv.addEventListener('pointerdown',e=>{const r=cv.getBoundingClientRect();handleTap((e.clientX-r.left)/scale+camX,(e.clientY-r.top)/scale+camY)});
+function toGrid(wx,wy,z){const a=wx/HW,b=(wy+z)/HH;return [Math.floor((a+b)/2),Math.floor((b-a)/2)]}
+function handleTap(wx,wy){
+  if(!joined)return;
+  if(approved&&!solo)for(const r of remotes.values()){const [sx,sy]=iso(r.char.px+.5,r.char.py+.5);if(Math.hypot(sx-wx,sy-18-wy)<20){walkToRemote(r);return}}
+  let f=null,ft=null;
+  for(const z of [40,24,12,0]){const [tx,ty]=toGrid(wx,wy,z);if(tx<0||ty<0||tx>=COLS||ty>=ROWS)continue;const g=furnAt[ty][tx];if(g&&g.act&&(HEIGHT[g.t]||10)>=z-4){f=g;ft=[tx,ty];break}}
+  cancelFocus();
+  if(f){target={x:ft[0],y:ft[1],t:performance.now()};goTo(player,tset(adjOfRect(f)),()=>ACTIONS[f.act](f));return}
+  const [tx,ty]=toGrid(wx,wy,0);
+  if(walkable(tx,ty)){target={x:tx,y:ty,t:performance.now()};goTo(player,tset([[tx,ty]]))}
+}
+const keys=new Set();
+const KEYMAP={ArrowUp:[0,-1],w:[0,-1],W:[0,-1],ArrowDown:[0,1],s:[0,1],S:[0,1],ArrowLeft:[-1,0],a:[-1,0],A:[-1,0],ArrowRight:[1,0],d:[1,0],D:[1,0]};
+window.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;if(KEYMAP[e.key]){keys.add(e.key);e.preventDefault()}});
+window.addEventListener('keyup',e=>keys.delete(e.key));
+function keyMove(){if(player.path.length)return;for(const k of keys){const [dx,dy]=KEYMAP[k];const [x,y]=tilePos(player);
+  if(walkable(x+dx,y+dy)){cancelFocus();player.onArrive=null;player.path=[[x+dx,y+dy]];return}}}
+
+/* ---------- primitives ---------- */
+const shadeCache={};
+function shade(hex,f){const k=hex+f;if(shadeCache[k])return shadeCache[k];const n=parseInt(hex.slice(1),16);
+  const c=[n>>16,n>>8&255,n&255].map(v=>Math.max(0,Math.min(255,Math.round(v*f))));return shadeCache[k]=`rgb(${c[0]},${c[1]},${c[2]})`}
+function poly(g,pts,fill){g.beginPath();g.moveTo(pts[0][0],pts[0][1]);for(let i=1;i<pts.length;i++)g.lineTo(pts[i][0],pts[i][1]);g.closePath();g.fillStyle=fill;g.fill()}
+function box(x,y,w,h,z0,z1,col,top){
+  poly(ctx,[iso(x,y+h,z0),iso(x+w,y+h,z0),iso(x+w,y+h,z1),iso(x,y+h,z1)],shade(col,.78));
+  poly(ctx,[iso(x+w,y,z0),iso(x+w,y+h,z0),iso(x+w,y+h,z1),iso(x+w,y,z1)],shade(col,.6));
+  poly(ctx,[iso(x,y,z1),iso(x+w,y,z1),iso(x+w,y+h,z1),iso(x,y+h,z1)],top||col);
+}
+function rr(g,x,y,w,h,r,fill,stroke){g.beginPath();g.roundRect?g.roundRect(x,y,w,h,r):g.rect(x,y,w,h);if(fill){g.fillStyle=fill;g.fill()}if(stroke){g.strokeStyle=stroke;g.lineWidth=1;g.stroke()}}
+function emoji(e,x,y,size=14){ctx.font=`${size}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(e,x,y)}
+/* vertical screen on a face. dir 'y': runs +x from (gx,gy), faces viewer-left. dir 'x': runs -y from (gx,gy), faces viewer-right. */
+function panel(dir,gx,gy,len,z0,z1,draw,seg,bezel='#05080f'){
+  const W=len*EL,H=z1-z0;const [ox,oy]=iso(gx,gy,z1);
+  ctx.save();
+  if(dir==='y')ctx.transform(HW/EL,HH/EL,0,1,ox,oy);else ctx.transform(HW/EL,-HH/EL,0,1,ox,oy);
+  if(seg){ctx.beginPath();ctx.rect(seg[0]*EL,-3,(seg[1]-seg[0])*EL,H+6);ctx.clip()}
+  if(bezel){ctx.fillStyle=bezel;ctx.fillRect(0,0,W,H);ctx.beginPath();ctx.rect(1.2,1.2,W-2.4,H-2.4);ctx.clip();ctx.translate(1.2,1.2);draw(W-2.4,H-2.4)}
+  else draw(W,H);
+  ctx.restore();
+}
+let T=0;
+const C={glow:'#4fd1ff',green:'#34d399',amber:'#fbbf24',red:'#f87171',blue:'#60a5fa'};
+function grad(g,w,h,a,b){const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,a);gr.addColorStop(1,b);return gr}
+function txt(t,x,y,size,col,align='left',bold=true){ctx.font=`${bold?'bold ':''}${size}px -apple-system,"PingFang HK","Noto Sans TC",sans-serif`;ctx.fillStyle=col;ctx.textAlign=align;ctx.textBaseline='top';ctx.fillText(t,x,y)}
+
+/* ---------- screen contents ---------- */
+function monDraw(seed){return (w,h)=>{
+  ctx.fillStyle=grad(ctx,w,h,'#1e3a8a','#0f1f4d');ctx.fillRect(0,0,w,h);
+  const k=Math.floor(seed*5)%3;
+  if(k===0){ctx.strokeStyle=C.glow;ctx.lineWidth=.8;ctx.beginPath();for(let i=0;i<=8;i++){const x=i/8*w,y=h*.6-Math.sin(i*.9+seed*9+T*.8)*h*.22;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.stroke()}
+  else if(k===1){for(let i=0;i<4;i++){ctx.fillStyle=i%2?'#93c5fd':'#3b82f6';ctx.fillRect(1.5,2+i*(h/4.5),(w-3)*(.3+hash(i,seed*99|0)*.7),1.6)}}
+  else{for(let r=0;r<3;r++)for(let c=0;c<3;c++){ctx.fillStyle=hash(r*3+c,seed*77|0)>.82?C.amber:C.green;ctx.globalAlpha=.85;ctx.fillRect(1.5+c*(w-3)/3,2+r*(h-4)/3,(w-3)/3-1,(h-4)/3-1)}ctx.globalAlpha=1}
+  ctx.fillStyle='rgba(255,255,255,.08)';ctx.fillRect(0,0,w,h*.35);
+}}
+function vwDraw(i){return (w,h)=>{
+  ctx.fillStyle=grad(ctx,w,h,'#0f2a55','#081633');ctx.fillRect(0,0,w,h);
+  const k=i%6;
+  if(k===0){txt('能耗',1.5,1,3.4,'#9cc7ff');ctx.strokeStyle=C.glow;ctx.lineWidth=.7;ctx.beginPath();for(let j=0;j<=12;j++){const x=j/12*w,y=h*.65-Math.sin(j*.7+T*1.2+i)*h*.2-Math.sin(j*1.9)*h*.06;j?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.stroke()}
+  else if(k===1){txt('BMS',1.5,1,3.4,'#9cc7ff');for(let r=0;r<3;r++)for(let c=0;c<5;c++){const bad=hash(r*5+c,i)>.88&&Math.sin(T*4)>0;ctx.fillStyle=bad?C.red:(hash(c,r+i)>.8?C.amber:C.green);ctx.fillRect(1.5+c*(w-3)/5,6+r*(h-8)/3,(w-3)/5-.8,(h-8)/3-.8)}}
+  else if(k===2){txt('99.2%',w/2,3,6,'#fff','center');txt('設施可用率',w/2,10,3,'#9cc7ff','center')}
+  else if(k===3){ctx.strokeStyle='#5b8bd6';ctx.lineWidth=.5;ctx.strokeRect(2,2,w-4,h-4);ctx.strokeRect(2,2,w*.45,h*.5);ctx.strokeRect(w*.55,h*.45,w*.4,h*.45);
+    for(let j=0;j<5;j++){const a=.5+.5*Math.sin(T*3+j);ctx.fillStyle=`rgba(79,209,255,${a})`;ctx.beginPath();ctx.arc(3+hash(j,i)*(w-6),3+hash(i,j)*(h-6),.9,0,7);ctx.fill()}}
+  else if(k===4){txt('工單',1.5,1,3.4,'#9cc7ff');[[C.amber,.7],[C.green,.9],[C.blue,.4]].forEach(([c,v],j)=>{ctx.fillStyle=c;const bh=(h-8)*v*(0.9+0.1*Math.sin(T+j));ctx.fillRect(3+j*(w-6)/3,h-2-bh,(w-6)/3-2,bh)})}
+  else{ctx.fillStyle=grad(ctx,w,h,'#3b4a63','#1d2533');ctx.fillRect(0,0,w,h);ctx.fillStyle='#64748b';ctx.fillRect(w*.15,h*.4,w*.25,h*.6);ctx.fillRect(w*.5,h*.25,w*.3,h*.75);txt('CAM',1.5,1,3,'#cbd5e1')}
+  ctx.fillStyle='rgba(255,255,255,.06)';ctx.fillRect(0,0,w,h*.3);
+}}
+function cctvDraw(n){return (w,h)=>{
+  ctx.fillStyle=grad(ctx,w,h,'#4b5563','#1f2937');ctx.fillRect(0,0,w,h);
+  ctx.fillStyle='#6b7280';ctx.fillRect(w*.1,h*.55,w*.8,h*.1);ctx.fillRect(w*(.2+.1*(n%3)),h*.3,w*.15,h*.25);
+  txt('CAM-0'+(n+1),1.5,1,3,'#e5e7eb');if(Math.sin(T*3+n)>0){ctx.fillStyle=C.red;ctx.beginPath();ctx.arc(w-3,3,1.1,0,7);ctx.fill()}
+}}
+function meetDraw(w,h){
+  ctx.fillStyle=grad(ctx,w,h,'#1d4ed8','#1e293b');ctx.fillRect(0,0,w,h);
+  txt('設施月報 · 本月',4,3,6,'#fff');txt('MVP資產與設施管理科',4,11,3.6,'#bfdbfe',undefined,false);
+  [.5,.8,.6,.95,.7].forEach((v,j)=>{ctx.fillStyle=j===3?C.amber:'#93c5fd';const bh=(h-20)*v;ctx.fillRect(4+j*9,h-3-bh,6,bh)});
+  ctx.strokeStyle='#fff';ctx.lineWidth=2.4;ctx.beginPath();ctx.arc(w-14,h-11,6,-1.5,-1.5+Math.PI*1.4);ctx.stroke();
+  ctx.strokeStyle='#475569';ctx.beginPath();ctx.arc(w-14,h-11,6,-1.5+Math.PI*1.4,-1.5+Math.PI*2);ctx.stroke();
+}
+function menuDraw(w,h){ctx.fillStyle='#1f2a1f';ctx.fillRect(0,0,w,h);txt('☕ 今日咖啡',3,2,5,'#fef3c7');txt('拿鐵 · 美式 · 檸茶',3,10,3.6,'#d9f99d',undefined,false);txt('記得洗杯 🙏',3,16,3.4,'#a7f3d0',undefined,false)}
+function woDraw(w,h){
+  ctx.fillStyle=grad(ctx,w,h,'#0f2a55','#0a1630');ctx.fillRect(0,0,w,h);
+  txt('工單概覽',4,2.5,5.2,'#fff');txt('示意數據',w-4,3,3.2,'#93a4c8','right',false);
+  const rows=[['CM',.62,C.amber],['PM',.86,C.green],['SUPPORT',.34,C.blue]];
+  rows.forEach(([l,v,c],j)=>{const y=10+j*6;txt(l,4,y,3.6,'#cbd5e1');ctx.fillStyle='#1e3a6b';ctx.fillRect(22,y+.6,w-30,3);ctx.fillStyle=c;ctx.fillRect(22,y+.6,(w-30)*v*(0.96+0.04*Math.sin(T+j)),3)});
+}
+function ledDraw(seed){return (w,h)=>{
+  for(let r=0;r<7;r++){ctx.fillStyle='#2b3140';ctx.fillRect(1,1+r*(h-2)/7,w-2,(h-2)/7-1.2);
+    for(let c=0;c<3;c++){const on=Math.sin(T*(2+c)+r*1.7+seed*5)>-.2;ctx.fillStyle=on?(c===2&&r===3?C.amber:C.green):'#14532d';ctx.fillRect(2+c*2.2,2+r*(h-2)/7,1.2,1.2)}}
+}}
+function arcadeDraw(seed){return (w,h)=>{const g=ctx.createLinearGradient(0,0,w,h);g.addColorStop(0,'#1e40af');g.addColorStop(1,'#7c3aed');ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
+  ctx.fillStyle='#fde047';const x=(T*8+seed*7)%w;ctx.fillRect(x,h*.55,2,2);ctx.fillStyle='#f472b6';ctx.fillRect(w-x,h*.3,2,2);ctx.fillStyle='rgba(255,255,255,.12)';ctx.fillRect(0,0,w,h*.3)}}
+
+/* ---------- floor cache ---------- */
+const fc=document.createElement('canvas');
+function buildFloor(){
+  const R=2;fc.width=WW*R;fc.height=WH*R;const g=fc.getContext('2d');g.setTransform(R,0,0,R,-WMINX*R,-WMINY*R);
+  g.fillStyle='#070b16';g.fillRect(WMINX,WMINY,WW,WH);
+  for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){
+    if(grid[y][x]==='#')continue;
+    const z=zoneAt(x,y),fl=z?z.floor:'door',h=hash(x,y);
+    const pts=[iso(x,y),iso(x+1,y),iso(x+1,y+1),iso(x,y+1)];
+    let col;
+    if(fl==='slate')col=['#283041','#2b3446','#262e3e'][Math.floor(h*3)];
+    else if(fl==='carpet')col=(x+y)%2?'#3d4658':'#414b5e';
+    else if(fl==='tile')col=(x+y)%2?'#cfc6b4':'#d9d1c0';
+    else if(fl==='wood2')col=['#6e4a31','#74503a','#6a472f'][Math.floor(h*3)];
+    else if(fl==='door')col='#5d4130';
+    else col=['#7b5233','#835838','#76502f','#7f5536'][Math.floor(h*4)];
+    poly(g,pts,col);
+    if(fl==='wood'||fl==='wood2'||fl==='door'){g.strokeStyle='rgba(0,0,0,.22)';g.lineWidth=.6;[.25,.5,.75].forEach(t=>{const a=iso(x,y+t),b=iso(x+1,y+t);g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke()});
+      g.beginPath();const o=Math.floor(h*3)/4+.12,a=iso(x+o,y),b=iso(x+o,y+.25);g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke()}
+    else{g.strokeStyle=fl==='tile'?'rgba(0,0,0,.08)':'rgba(255,255,255,.05)';g.lineWidth=.6;g.beginPath();pts.forEach((p,i)=>i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]));g.closePath();g.stroke()}
+  }
+  // lounge rug + light pools
+  poly(g,[iso(17.6,10.4),iso(20.6,10.4),iso(20.6,12.6),iso(17.6,12.6)],'rgba(122,62,140,.55)');
+  const [gx,gy]=iso(5.5,2.2);const rg=g.createRadialGradient(gx,gy,10,gx,gy,230);rg.addColorStop(0,'rgba(70,140,255,.28)');rg.addColorStop(1,'rgba(70,140,255,0)');g.fillStyle=rg;g.fillRect(gx-240,gy-240,480,480);
+  const [hx,hy]=iso(11.5,9);const rg2=g.createRadialGradient(hx,hy,5,hx,hy,120);rg2.addColorStop(0,'rgba(70,140,255,.18)');rg2.addColorStop(1,'rgba(70,140,255,0)');g.fillStyle=rg2;g.fillRect(hx-130,hy-130,260,260);
+}
+
+/* ---------- static drawables ---------- */
+const STATIC=[];
+for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++)if(grid[y][x]==='#'){const h=wallH(x,y);
+  STATIC.push({k:x+y,d:()=>box(x,y,1,1,0,h,h>30?'#d8d2c6':'#c9c2b5',h>30?'#b9b2a5':'#a9a294')})}
+for(let i=0;i<8;i++){const x=2+i;
+  STATIC.push({k:x+.5,d:()=>{panel('y',x+.04,1,.92,26,44,vwDraw(i*2));panel('y',x+.04,1,.92,45.5,62,vwDraw(i*2+5))}})}
+for(let i=0;i<4;i++){const y=2+i;
+  STATIC.push({k:y+.5,d:()=>{panel('x',1,y+.96,.92,26,44,cctvDraw(i*2));panel('x',1,y+.96,.92,45.5,62,cctvDraw(i*2+1))}})}
+for(let i=0;i<3;i++){const x=13+i;STATIC.push({k:x+.5,d:()=>panel('y',13.1,1,2.8,28,58,meetDraw,[x-13.1,x+1-13.1])})}
+for(let i=0;i<2;i++){const x=18+i;STATIC.push({k:x+.5,d:()=>panel('y',18.15,1,1.7,34,56,menuDraw,[x-18.15,x+1-18.15],'#3b2f22')})}
+FURN.forEach(f=>{for(let ty=f.y;ty<f.y+f.h;ty++)for(let tx=f.x;tx<f.x+f.w;tx++)STATIC.push({k:tx+ty,d:()=>drawFurnTile(f,tx,ty)})});
+SEATS.forEach(([x,y])=>STATIC.push({k:x+y+.1,d:()=>{box(x+.47,y+.42,.06,.06,0,6,'#111318');box(x+.28,y+.25,.44,.42,6,10,'#2b2f38');box(x+.28,y+.64,.44,.08,10,24,'#262a32')}}));
+STATIC.sort((a,b)=>a.k-b.k);
+
+function drawFurnTile(f,tx,ty){
+  const a=.07,ix0=tx===f.x?a:0,ix1=tx===f.x+f.w-1?a:0,iy0=ty===f.y?a:0,iy1=ty===f.y+f.h-1?a:0;
+  const bx=tx+ix0,by=ty+iy0,bw=1-ix0-ix1,bh=1-iy0-iy1;
+  switch(f.t){
+    case 'console':
+      box(bx,by,bw,bh,0,12,'#262a31','#30353e');
+      poly(ctx,[iso(tx+.15,ty+.62,12.2),iso(tx+.85,ty+.62,12.2),iso(tx+.85,ty+.78,12.2),iso(tx+.15,ty+.78,12.2)],'#4b5160');
+      box(tx+.24,ty+.25,.04,.04,12,16,'#111');box(tx+.7,ty+.25,.04,.04,12,16,'#111');
+      panel('y',tx+.04,ty+.3,.44,15,29,monDraw(hash(tx,ty)));panel('y',tx+.52,ty+.3,.44,15,29,monDraw(hash(ty,tx+3)));
+      break;
+    case 'desk':
+      box(bx,by,bw,bh,0,12,'#3a3029','#4a3d33');
+      poly(ctx,[iso(tx+.2,ty+.62,12.2),iso(tx+.8,ty+.62,12.2),iso(tx+.8,ty+.78,12.2),iso(tx+.2,ty+.78,12.2)],'#6b7280');
+      box(tx+.47,ty+.28,.06,.06,12,16,'#111');
+      panel('y',tx+.1,ty+.32,.8,15,29,monDraw(hash(tx+5,ty)));
+      if(tx===f.x)emoji('☕',...iso(tx+.15,ty+.5,16),7);
+      break;
+    case 'table':box(bx,by,bw,bh,0,11,'#9a6a3c','#b07b47');if(f.icon&&tx===f.x+Math.floor(f.w/2)&&ty===f.y+f.h-1)emoji(f.icon,...iso(tx+.5,ty+.2,20),12);break;
+    case 'sofa':box(bx,by,bw,bh,0,9,'#3f5f9a','#4c6fae');box(bx,by,bw,.26,9,21,'#37558c','#4566a3');break;
+    case 'counter':box(bx,by,bw,bh,0,15,'#aeb7c4','#d5dbe3');if(tx===f.x+1){box(tx+.15,ty+.15,.7,.55,15,26,'#e5e7eb');panel('y',tx+.2,ty+.7,.45,17,24,(w,h)=>{ctx.fillStyle='#111827';ctx.fillRect(0,0,w,h)},null,null)}
+      if(tx===f.x)emoji('🍱',...iso(tx+.5,ty+.5,20),9);break;
+    case 'coffee':box(tx+.06,ty+.08,.88,.84,0,15,'#aeb7c4','#d5dbe3');box(tx+.25,ty+.2,.5,.45,15,32,'#1f2937','#374151');emoji('☕',...iso(tx+.5,ty+.8,20),9);break;
+    case 'fridge':box(tx+.12,ty+.12,.76,.76,0,42,'#e7ecf2','#f6f8fb');box(tx+.2,ty+.88,.04,.02,22,36,'#94a3b8');break;
+    case 'rack':box(tx+.1,ty+.1,.8,.8,0,50,'#1b1f27','#262c37');panel('y',tx+.16,ty+.9,.68,4,46,ledDraw(hash(tx,ty)),null,null);break;
+    case 'arcade':box(tx+.12,ty+.15,.76,.7,0,46,'#4c1d95','#6d28d9');panel('y',tx+.2,ty+.85,.6,24,37,arcadeDraw(tx),null,'#000');panel('y',tx+.2,ty+.85,.6,39,45,(w,h)=>{ctx.fillStyle=Math.sin(T*3+tx)>0?'#f472b6':'#ec4899';ctx.fillRect(0,0,w,h)},null,null);
+      box(tx+.2,ty+.85,.6,.12,18,20,'#312e81');break;
+    case 'plant':box(tx+.33,ty+.33,.34,.34,0,9,'#8a5230','#a5653c');{const [px,py]=iso(tx+.5,ty+.5,18);ctx.fillStyle='#2a7d45';ctx.beginPath();ctx.arc(px,py,9,0,7);ctx.fill();ctx.fillStyle='#38a35a';ctx.beginPath();ctx.arc(px-3,py-5,6,0,7);ctx.arc(px+4,py-3,5,0,7);ctx.fill()}break;
+    case 'board':if(tx===f.x+1){box(tx+.46,ty+.5,.08,.08,0,14,'#2a2f3a');box(tx-.6,ty+.4,2.2,.3,0,2,'#2a2f3a')}
+      panel('y',f.x+.05,ty+.55,f.w-.1,14,44,woDraw,[tx-(f.x+.05),tx+1-(f.x+.05)]);break;
+    case 'printer':box(tx+.18,ty+.2,.64,.6,0,14,'#cfd5dd','#e5e9ee');emoji('🏷️',...iso(tx+.5,ty+.5,20),9);break;
+  }
+}
+
+/* ---------- characters ---------- */
+function drawChar(c,isMe,status){
+  const [sx,sy]=iso(c.px+.5,c.py+.5);const b=c.moving?Math.sin(c.bob)*1.5:0;
+  if(isMe){ctx.strokeStyle='rgba(120,160,255,.8)';ctx.lineWidth=1.6;ctx.beginPath();ctx.ellipse(sx,sy,13,6.5,0,0,7);ctx.stroke()}
+  ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(sx,sy,9,4.5,0,0,7);ctx.fill();
+  const lg=c.moving?Math.sin(c.bob)*2:0;
+  rr(ctx,sx-5,sy-11+lg*.3,4,11-lg*.3,1.5,'#1f2430');rr(ctx,sx+1,sy-11-lg*.3,4,11+lg*.3,1.5,'#1f2430');
+  rr(ctx,sx-7.5,sy-24+b,15,15,5,c.color);
+  ctx.fillStyle='rgba(255,255,255,.18)';ctx.fillRect(sx-1,sy-23+b,2,6);
+  ctx.fillStyle='#f3cfae';ctx.beginPath();ctx.arc(sx,sy-30+b,7.5,0,7);ctx.fill();
+  ctx.fillStyle=c.hair||'#1f2937';ctx.beginPath();ctx.arc(sx,sy-31+b,7.9,Math.PI*1.02,Math.PI*1.98);ctx.fill();
+  ctx.fillStyle='#1f2430';ctx.beginPath();ctx.arc(sx-2.5+c.dir*1.3,sy-29+b,1.1,0,7);ctx.arc(sx+2.5+c.dir*1.3,sy-29+b,1.1,0,7);ctx.fill();
+  if(c.isOwner)emoji('👑',sx,sy-42+b,10);
+}
+function drawTag(c,status){const [sx,sy]=iso(c.px+.5,c.py+.5);
+  ctx.font='bold 10px -apple-system,"PingFang HK",sans-serif';const nm=c.name||'',tw=ctx.measureText(nm).width+16;
+  rr(ctx,sx-tw/2,sy+5,tw,14,7,'rgba(12,18,34,.88)','rgba(130,150,210,.35)');
+  ctx.fillStyle=STATUS_COLOR[status]||'#9ca3af';ctx.beginPath();ctx.arc(sx-tw/2+7,sy+12,3,0,7);ctx.fill();
+  ctx.fillStyle='#e6ebf5';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(nm,sx-tw/2+12,sy+12.5);
+}
+function drawBubble(c){
+  if(!c.bubble||performance.now()>c.bubble.until){c.bubble=null;return}
+  const [cx,sy]=iso(c.px+.5,c.py+.5);const top=sy-(c.isOwner?48:42);ctx.font='11px -apple-system,"PingFang HK",sans-serif';
+  const lines=[];let cur='';for(const ch of [...c.bubble.text]){if(ctx.measureText(cur+ch).width>118){lines.push(cur);cur=ch}else cur+=ch}lines.push(cur);
+  const sl=lines.slice(0,4);const w=Math.max(...sl.map(l=>ctx.measureText(l).width))+14,h=sl.length*14+8;
+  const bx=Math.max(camX+4,Math.min(cx-w/2,camX+viewW-w-4)),by=top-h;
+  rr(ctx,bx,by,w,h,8,'#fff','rgba(0,0,0,.2)');ctx.fillStyle='#fff';ctx.beginPath();ctx.moveTo(cx-5,by+h-1);ctx.lineTo(cx+5,by+h-1);ctx.lineTo(cx,by+h+5);ctx.fill();
+  ctx.fillStyle='#1f2430';ctx.textAlign='left';ctx.textBaseline='top';sl.forEach((l,i)=>ctx.fillText(l,bx+7,by+5+i*14));
+}
+function drawSigns(){
+  ZONES.forEach(z=>{
+    const top=z.y0===1;const [sx,sy]=iso((z.x0+z.x1+1)/2,z.y0+(top?.2:.3),top?74:40);
+    ctx.font='bold 13px -apple-system,"PingFang HK","Noto Sans TC",sans-serif';const tw=ctx.measureText(z.name).width+22;
+    rr(ctx,sx-tw/2+2,sy-11+3,tw,23,11.5,'rgba(0,0,0,.45)');
+    rr(ctx,sx-tw/2,sy-11,tw,23,11.5,'#141c38','#7d8fd6');
+    ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(z.name,sx,sy+1);
+  });
+}
+function render(){
+  T=performance.now()/1000;
+  const [px,py]=iso(player.px+.5,player.py+.5);
+  let gx=px-viewW/2,gy=py-20-viewH/2;
+  gx=viewW>=WW?WMINX+(WW-viewW)/2:Math.max(WMINX,Math.min(gx,WMAXX-viewW));
+  gy=viewH>=WH?WMINY+(WH-viewH)/2:Math.max(WMINY,Math.min(gy,WMAXY-viewH));
+  if(!camInit){camX=gx;camY=gy;camInit=true}else{camX+=(gx-camX)*.15;camY+=(gy-camY)*.15}
+  const d=cv._dpr*scale;
+  ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#070b16';ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.setTransform(d,0,0,d,-camX*d,-camY*d);
+  ctx.drawImage(fc,WMINX,WMINY,WW,WH);
+  if(target&&player.path.length){const t=(performance.now()-target.t)/1000;ctx.strokeStyle=`rgba(120,170,255,${.75-.3*Math.sin(t*6)})`;ctx.lineWidth=1.6;
+    const p=[iso(target.x+.1,target.y+.1),iso(target.x+.9,target.y+.1),iso(target.x+.9,target.y+.9),iso(target.x+.1,target.y+.9)];ctx.beginPath();p.forEach((q,i)=>i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1]));ctx.closePath();ctx.stroke()}
+  const chars=[];if(joined)chars.push({k:player.px+player.py+.6,c:player,me:true,st:myStatus()});
+  if(approved&&!solo)for(const r of remotes.values())chars.push({k:r.char.px+r.char.py+.6,c:r.char,me:false,st:r.char.status});
+  chars.sort((a,b)=>a.k-b.k);
+  let ci=0;
+  for(const s of STATIC){while(ci<chars.length&&chars[ci].k<=s.k){const o=chars[ci++];drawChar(o.c,o.me,o.st)}s.d()}
+  while(ci<chars.length){const o=chars[ci++];drawChar(o.c,o.me,o.st)}
+  drawSigns();
+  chars.forEach(o=>drawTag(o.c,o.st));chars.forEach(o=>drawBubble(o.c));
+}
+buildFloor();
+/* ---------- toast & HUD ---------- */
+let toastT;function toast(t){const el=$('toast');el.textContent=t;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),2800)}
+function hud(){
+  player.name=(myId&&names[myId])||player.nick||'我';player.isOwner=mode==='owner';
+  const st=myStatus();$('hDot').style.background=STATUS_COLOR[st];$('hStatus').textContent=st;$('hName').textContent=player.name;
+  const z=zoneAt(...tilePos(player));$('hZone').textContent=z?z.name:'走廊';$('hEnergy').style.width=energy+'%';
+  const left=focusUntil-Date.now();
+  if(left>0){$('hFocusPill').style.display='';const m=Math.floor(left/60000),s=Math.floor(left/1000)%60;$('hFocus').textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`}
+  else{if(focusUntil){focusUntil=0;toast('🎉 專注 25 分鐘完成！休息下啦')}$('hFocusPill').style.display='none'}
+  if(joined&&z&&z!==lastZone){if(lastZone)toast(`📍 入咗${z.name}`);lastZone=z}
+}
+
+/* ---------- loop ---------- */
+let last=performance.now(),accE=0,accUi=0;
+function loop(now){
+  const dt=Math.min(0.05,(now-last)/1000);last=now;
+  if(joined){keyMove();step(player,dt);syncPresence();
+    accE+=dt;if(accE>15){accE=0;addEnergy(-2);if(energy<20&&energy>=18)toast('😪 精神唔夠喇，去茶水間沖杯咖啡啦')}}
+  for(const r of remotes.values()){const c=r.char;const dx=c.tx-c.px,dy=c.ty-c.py,dd=Math.hypot(dx,dy);
+    if(dd>4){c.px=c.tx;c.py=c.ty;c.moving=false}else if(dd>0.01){const s=Math.min(dd,4.2*dt);c.px+=dx/dd*s;c.py+=dy/dd*s;c.moving=true;c.bob+=dt*14;if(Math.abs(dx)>0.01)c.dir=dx>0?1:-1}else c.moving=false}
+  accUi-=dt;if(accUi<=0){accUi=1;hud();renderPeople()}
+  render();requestAnimationFrame(loop);
+}
+resize();sysMsg('辦公室聊天室');renderPeople();
+requestAnimationFrame(loop);
+setupWelcome();initFirebase();
+})();
+</script>
+</body>
+</html>
